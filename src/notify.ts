@@ -17,7 +17,6 @@ if (platform === "Linux" || platform.match(/BSD$/)) {
   const { WindowsToaster } = notifier
   platformNotifier = new WindowsToaster({ withFallback: false })
 } else {
-  console.warn(`[opencode-notifier] Unsupported platform: ${platform}. Using generic notifier with fallback enabled.`)
   platformNotifier = notifier
 }
 
