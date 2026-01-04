@@ -12,18 +12,67 @@ Add the plugin to your `opencode.json` or `opencode.jsonc`:
 }
 ```
 
+Using `@latest` ensures you always get the newest version when the cache is refreshed.
+
+To pin a specific version:
+
+```json
+{
+  "plugin": ["@mohak34/opencode-notifier@0.1.8"]
+}
+```
+
 Restart OpenCode. The plugin will be automatically installed and loaded.
 
 ## Updating
 
-OpenCode caches plugins in `~/.cache/opencode`. To update to the latest version:
+OpenCode caches plugins in `~/.cache/opencode`. Plugins are not auto-updated; you need to clear the cache to get new versions.
 
-1. **Clear the plugin from cache:**
-      ```rm -rf ~/.cache/opencode/node_modules/@mohak34/opencode-notifier```
-2. Restart OpenCode - it will download the latest version.
+### If you use `@latest`
 
-To check your installed version:
-```cat ~/.cache/opencode/node_modules/@mohak34/opencode-notifier/package.json | grep version```
+Clear the cache and restart OpenCode:
+
+**Linux/macOS:**
+
+```bash
+rm -rf ~/.cache/opencode/node_modules/@mohak34/opencode-notifier
+```
+
+**Windows (PowerShell):**
+
+```powershell
+Remove-Item -Recurse -Force "$env:USERPROFILE\.cache\opencode\node_modules\@mohak34\opencode-notifier"
+```
+
+Then restart OpenCode - it will download the latest version automatically.
+
+### If you use a pinned version (e.g., `@0.1.7`)
+
+1. Update the version in your `opencode.json`:
+
+   ```json
+   {
+     "plugin": ["@mohak34/opencode-notifier@0.1.8"]
+   }
+   ```
+
+2. Clear the cache (see commands above)
+
+3. Restart OpenCode
+
+### Check installed version
+
+**Linux/macOS:**
+
+```bash
+cat ~/.cache/opencode/node_modules/@mohak34/opencode-notifier/package.json | grep version
+```
+
+**Windows (PowerShell):**
+
+```powershell
+Get-Content "$env:USERPROFILE\.cache\opencode\node_modules\@mohak34\opencode-notifier\package.json" | Select-String "version"
+```
 
 ## Platform Notes
 
