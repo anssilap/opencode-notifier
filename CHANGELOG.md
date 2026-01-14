@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.12] - 2026-01-14
+
+### Added
+- Notification and sound when the `question` tool is invoked (closes #14)
+
 ## [0.1.11] - 2026-01-14
 
 ### Changed
