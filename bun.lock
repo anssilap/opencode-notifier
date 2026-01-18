@@ -2,7 +2,7 @@
   "lockfileVersion": 1,
   "workspaces": {
     "": {
-      "name": "@mohak34/opencode-notifier",
+      "name": "@anssilap/opencode-notifier",
       "dependencies": {
         "node-notifier": "^10.0.1",
       },

@@ -8,7 +8,7 @@ Add the plugin to your `opencode.json` or `opencode.jsonc`:
 
 ```json
 {
-  "plugin": ["@mohak34/opencode-notifier@latest"]
+  "plugin": ["@anssilap/opencode-notifier@latest"]
 }
 ```
 
@@ -18,7 +18,7 @@ To pin a specific version:
 
 ```json
 {
-  "plugin": ["@mohak34/opencode-notifier@0.1.10"]
+  "plugin": ["@anssilap/opencode-notifier@0.1.10"]
 }
 ```
 
@@ -35,7 +35,7 @@ Clear the cache and restart OpenCode:
 **Linux/macOS:**
 
 ```bash
-rm -rf ~/.cache/opencode/node_modules/@mohak34/opencode-notifier
+rm -rf ~/.cache/opencode/node_modules/@anssilap/opencode-notifier
 ```
 
 **Windows (PowerShell):**
@@ -52,7 +52,7 @@ Then restart OpenCode - it will download the latest version automatically.
 
    ```json
    {
-     "plugin": ["@mohak34/opencode-notifier@0.1.10"]
+     "plugin": ["@anssilap/opencode-notifier@0.1.10"]
    }
    ```
 
@@ -65,7 +65,7 @@ Then restart OpenCode - it will download the latest version automatically.
 **Linux/macOS:**
 
 ```bash
-cat ~/.cache/opencode/node_modules/@mohak34/opencode-notifier/package.json | grep version
+cat ~/.cache/opencode/node_modules/@anssilap/opencode-notifier/package.json | grep version
 ```
 
 **Windows (PowerShell):**
@@ -306,14 +306,14 @@ sudo apt install mpv
 
    ```json
    {
-     "plugin": ["@mohak34/opencode-notifier@latest"]
+     "plugin": ["@anssilap/opencode-notifier@latest"]
    }
    ```
 
 2. **Clear the cache and restart:**
 
    ```bash
-   rm -rf ~/.cache/opencode/node_modules/@mohak34/opencode-notifier
+   rm -rf ~/.cache/opencode/node_modules/@anssilap/opencode-notifier
    ```
 
 ## License

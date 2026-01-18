@@ -1,5 +1,5 @@
 {
-  "name": "@mohak34/opencode-notifier",
+  "name": "@anssilap/opencode-notifier",
   "version": "0.1.13",
   "description": "OpenCode plugin that sends system notifications and plays sounds when permission is needed, generation completes, or errors occur",
   "author": "mohak34",
