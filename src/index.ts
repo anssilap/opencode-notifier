@@ -1,9 +1,10 @@
-import type { Plugin } from "@opencode-ai/plugin"
+import type { Plugin, PluginInput } from "@opencode-ai/plugin"
 import { basename } from "path"
 import { loadConfig, isEventSoundEnabled, isEventNotificationEnabled, getMessage, getSoundPath } from "./config"
 import type { EventType, NotifierConfig } from "./config"
 import { sendNotification } from "./notify"
 import { playSound } from "./sound"
+import { runCommand } from "./command"
 
 function getNotificationTitle(config: NotifierConfig, projectName: string | null): string {
   if (config.showProjectName && projectName) {
@@ -15,13 +16,14 @@ function getNotificationTitle(config: NotifierConfig, projectName: string | null
 async function handleEvent(
   config: NotifierConfig,
   eventType: EventType,
-  projectName: string | null
+  projectName: string | null,
+  elapsedSeconds?: number | null
 ): Promise<void> {
   const promises: Promise<void>[] = []
+  const message = getMessage(config, eventType)
 
   if (isEventNotificationEnabled(config, eventType)) {
     const title = getNotificationTitle(config, projectName)
-    const message = getMessage(config, eventType)
     promises.push(sendNotification(title, message, config.timeout))
   }
 
@@ -30,7 +32,111 @@ async function handleEvent(
     promises.push(playSound(eventType, customSoundPath))
   }
 
+  const minDuration = config.command?.minDuration
+  const shouldSkipCommand =
+    typeof minDuration === "number" &&
+    Number.isFinite(minDuration) &&
+    minDuration > 0 &&
+    typeof elapsedSeconds === "number" &&
+    Number.isFinite(elapsedSeconds) &&
+    elapsedSeconds < minDuration
+
+  if (!shouldSkipCommand) {
+    runCommand(config, eventType, message)
+  }
+
   await Promise.allSettled(promises)
+}
+
+function getSessionIDFromEvent(event: unknown): string | null {
+  if (!event || typeof event !== "object") {
+    return null
+  }
+
+  const anyEvent = event as any
+  const candidates = [
+    anyEvent?.properties?.sessionID,
+    anyEvent?.properties?.sessionId,
+    anyEvent?.sessionID,
+    anyEvent?.sessionId,
+  ]
+
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate.length > 0) {
+      return candidate
+    }
+  }
+
+  return null
+}
+
+async function getElapsedPromptExecutionSeconds(
+  client: PluginInput["client"],
+  sessionID: string
+): Promise<number | null> {
+  try {
+    const response = await client.session.get({ path: { id: sessionID } })
+    const createdAt = response.data?.time?.created
+    const updatedAt = response.data?.time?.updated
+
+    if (
+      typeof createdAt === "number" &&
+      Number.isFinite(createdAt) &&
+      typeof updatedAt === "number" &&
+      Number.isFinite(updatedAt) &&
+      updatedAt >= createdAt
+    ) {
+      return (updatedAt - createdAt) / 1000
+    }
+  } catch {
+    // Best-effort: unknown duration should not cause gating.
+  }
+
+  return null
+}
+
+async function isChildSession(client: PluginInput["client"], sessionID: string): Promise<boolean> {
+  try {
+    const response = await client.session.get({ path: { id: sessionID } })
+    const parentID = response.data?.parentID
+
+    return !!parentID
+  } catch {
+    return false
+  }
+}
+
+async function getElapsedPromptExecutionSecondsFromEvent(
+  client: PluginInput["client"],
+  event: unknown
+): Promise<number | null> {
+  const sessionID = getSessionIDFromEvent(event)
+  if (!sessionID) {
+    return null
+  }
+
+  return getElapsedPromptExecutionSeconds(client, sessionID)
+}
+
+async function handleEventForOpenCodeEvent(
+  client: PluginInput["client"],
+  config: NotifierConfig,
+  eventType: EventType,
+  projectName: string | null,
+  event: unknown
+): Promise<void> {
+  const minDuration = config.command?.minDuration
+  const shouldLookupElapsed =
+    !!config.command?.enabled &&
+    typeof config.command?.path === "string" &&
+    config.command.path.length > 0 &&
+    typeof minDuration === "number" &&
+    Number.isFinite(minDuration) &&
+    minDuration > 0
+
+  const elapsedSeconds = shouldLookupElapsed ? await getElapsedPromptExecutionSecondsFromEvent(client, event) : null
+
+  await handleEvent(config, eventType, projectName, elapsedSeconds)
 }
 
 export const NotifierPlugin: Plugin = async ({ project, client, $, directory, worktree }) => {
@@ -40,19 +146,27 @@ export const NotifierPlugin: Plugin = async ({ project, client, $, directory, wo
   return {
     event: async ({ event }) => {
       if (event.type === "permission.updated") {
-        await handleEvent(config, "permission", projectName)
+        await handleEventForOpenCodeEvent(client, config, "permission", projectName, event)
       }
 
       if ((event as any).type === "permission.asked") {
-        await handleEvent(config, "permission", projectName)
+        await handleEventForOpenCodeEvent(client, config, "permission", projectName, event)
       }
 
       if (event.type === "session.idle") {
-        await handleEvent(config, "complete", projectName)
+        const sessionID = getSessionIDFromEvent(event)
+        if (sessionID) {
+          const isChild = await isChildSession(client, sessionID)
+          if (!isChild) {
+            await handleEventForOpenCodeEvent(client, config, "complete", projectName, event)
+          } else {
+            await handleEventForOpenCodeEvent(client, config, "subagent_complete", projectName, event)
+          }
+        }
       }
 
       if (event.type === "session.error") {
-        await handleEvent(config, "error", projectName)
+        await handleEventForOpenCodeEvent(client, config, "error", projectName, event)
       }
     },
     "permission.ask": async () => {
